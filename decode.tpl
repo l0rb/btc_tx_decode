@@ -9,6 +9,8 @@
         </form>
         ::if (tx != null)::
             <p style="max-width:100%;padding:30px;background-color:black;font-family: monospace, monospace;">
+            <span style="color:green;">TXID ::tx.hash:: (only correct for non segwit)</span><br>
+            <br>
             <table style="margin-bottom:30px;">
                 ::foreach tx.sections::
                     <tr>

@@ -13,6 +13,8 @@
 
 import haxe.Int64; // UInt64 does not exist in most targets : (
 import StringTools;
+import haxe.crypto.Sha256;
+import haxe.io.Bytes;
 
 #if php
     import php.Lib;
@@ -108,6 +110,16 @@ class Encoding {
         }
         return result;
     }
+    static public function double256(bytes:Array<Int>):String {
+        var as_string:String = "";
+        for(byte in bytes)
+            as_string += String.fromCharCode(byte);
+        var bytes_again = Bytes.ofString(as_string);
+        
+        var tmp = Sha256.make(Sha256.make(bytes_again)).toString().split("");
+        tmp.reverse(); // fucking in-place shit destroys my beautiful chaining
+        return Bytes.ofString(tmp.join("")).toHex();
+    }
 }
 
 class Tx {
@@ -119,10 +131,12 @@ class Tx {
     public var locktime:Int;
     public var segwit:Int = 0;
     public var witness_size:Int = 0;
+    public var hash:String = "hash";
 
     public function new(hexstring) {
         hex = hexstring;
         bytes = Encoding.hexstring_to_bytearray(hex);
+        hash = Encoding.double256(bytes);
         var raw_tx = bytes.copy();
         
         version = Encoding.splice_int32(raw_tx);
