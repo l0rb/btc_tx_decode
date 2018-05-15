@@ -28,7 +28,7 @@ import haxe.io.Bytes;
 
 class Decode {
     static public function main():Void {
-        var hex = get_tx();
+        var hex = StringTools.trim(get_tx());
         var tx = null;
         if(hex != null) {
             tx = new FancyTx(hex);
