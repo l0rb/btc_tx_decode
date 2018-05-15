@@ -132,13 +132,15 @@ class Tx {
     public var segwit:Int = 0;
     public var witness_size:Int = 0;
     public var hash:String = "hash";
+    public var hash_bytes:Array<Int>;
+    public var hash_bytes_string:String;
 
     public function new(hexstring) {
         hex = hexstring;
         bytes = Encoding.hexstring_to_bytearray(hex);
-        hash = Encoding.double256(bytes);
         var raw_tx = bytes.copy();
-        
+        hash_bytes = bytes.copy();
+
         version = Encoding.splice_int32(raw_tx);
         
         inputs = new Array<TxIn>(); 
@@ -167,8 +169,14 @@ class Tx {
                 }
             }
             witness_size = raw_before - raw_tx.length;
+            hash_bytes.splice(4, 2); // first 8 bytes are version, next 2 bytes are segwit stuff
+            hash_bytes.reverse();
+            hash_bytes.splice(4, witness_size); // last 4 bytes are locktime, next n bytes are segwit stuff
+            hash_bytes.reverse();
         }
         locktime = Encoding.splice_int32(raw_tx);
+        hash = Encoding.double256(hash_bytes);
+        hash_bytes_string = Encoding.bytearray_to_hexstring(hash_bytes);
 
         if(raw_tx.length > 0)
             trace("Warning: Extra bytes at end of tx. " + raw_tx);
