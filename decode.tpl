@@ -15,7 +15,11 @@
                 ::foreach tx.sections::
                     <tr>
                         <td><span style="color:::color::;">::label:::</span></td>
-                        <td><span style="color:::color::;">::human_readable::</span></td>
+                        <td><span style="color:::color::;">::human_readable::</span><span style="color:white">
+                            ::if (links != null)::
+                                ::foreach links::<a href="::href::">::text::</a> ::end::
+                            ::end::
+                        </span></td>
                     <tr>
                 ::end::
             </table>

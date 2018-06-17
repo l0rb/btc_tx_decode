@@ -33,6 +33,7 @@ class Decode {
         if(hex != null) {
             tx = new FancyTx(hex);
         }
+        // TODO: use the resource embedding system instead of sys.io
         var file_content = sys.io.File.getContent("../decode.tpl");
         var tpl = new haxe.Template(file_content);
         var output = tpl.execute({tx:tx});
@@ -183,11 +184,16 @@ class Tx {
     }
 }
 
+typedef AHref = {
+    var text:String;
+    var href:String;
+}
 typedef FancyTxSection = {
     var hex:String;
     var color:String;
     var label:String;
     var human_readable:String;
+    @:optional var links:Array<AHref>;
 }
 class FancyTx extends Tx {
     public var sections:Array<FancyTxSection>;
@@ -195,6 +201,16 @@ class FancyTx extends Tx {
     public function new(hexstring) {
         super(hexstring);
         _colored_hex();
+    }
+    private function _make_tx_links(txid:String):Array<AHref> {
+        var links = new Array<AHref>();
+        var linkMap = new Map<String, String>();
+        linkMap["btc"] = "https://insight.bitpay.com/tx/::txid::";
+        linkMap["tbtc"] = "https://test-insight.bitpay.com/tx/::txid::";
+        for(text in linkMap.keys()) {
+            links.push({text:text, href:(new haxe.Template(linkMap[text])).execute({txid:txid})});
+        }
+        return links;
     }
     private function _colored_hex():Void {
         sections = new Array<FancyTxSection>();
@@ -217,7 +233,8 @@ class FancyTx extends Tx {
             var input = inputs[i-1];
             var length = input.size * 2;
             var color = make_color(i, inputs.length, [255, 20, 20]);
-            sections.push({hex:tmp_hex.substr(0, length), color:"#"+color, label:"Input #"+i, human_readable:input.prev_tx_hash + ":" + input.prev_tx_n});
+            var links = _make_tx_links(input.prev_tx_hash);
+            sections.push({hex:tmp_hex.substr(0, length), color:"#"+color, label:"Input #"+i, human_readable:input.prev_tx_hash + ":" + input.prev_tx_n, links:links});
             tmp_hex = tmp_hex.substring(length);
         }
         
