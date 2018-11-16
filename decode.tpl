@@ -14,6 +14,7 @@
             <table style="margin-bottom:30px;">
                 ::foreach tx.sections::
                     <tr>
+                        <!--td><span style="color:white;">::label:::</span></td-->
                         <td><span style="color:::color::;">::label:::</span></td>
                         <td><span style="color:::color::;">::human_readable::</span><span style="color:white">
                             ::if (links != null)::

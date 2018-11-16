@@ -232,6 +232,18 @@ class FancyTx extends Tx {
         }
         return links;
     }
+    private function _colored_txin(tmp_hex:String, sections:Array<FancyTxSection>, i:Int):String {
+        var input = inputs[i-1];
+        var length = input.size * 2;
+        var color = make_color(i, inputs.length, [255, 20, 20]);
+        var links = _make_tx_links(input.prev_tx_hash);
+        sections.push({hex:tmp_hex.substr(0, 64), color:"#"+color, label:"Input #"+i+" Hash", human_readable:input.prev_tx_hash, links:links});
+        sections.push({hex:tmp_hex.substr(64, 8), color:"#00DDDD", label:"Input #"+i+" prev_tx_n", human_readable:""+input.prev_tx_n});
+        sections.push({hex:tmp_hex.substr(72, length-80), color:"#"+color, label:"Input #"+i+" Signature", human_readable:"Signature Data"});
+        sections.push({hex:tmp_hex.substr(length-8, 8), color:"#FFFF00", label:"Input #"+i+" Sequence", human_readable:""+input.sequence});
+        tmp_hex = tmp_hex.substring(length);
+        return tmp_hex;
+    }
     private function _colored_hex():Void {
         sections = new Array<FancyTxSection>();
         var tmp_hex = hex;
@@ -250,12 +262,7 @@ class FancyTx extends Tx {
         tmp_hex = tmp_hex.substring(2);
 
         for(i in 1...(inputs.length+1)) {
-            var input = inputs[i-1];
-            var length = input.size * 2;
-            var color = make_color(i, inputs.length, [255, 20, 20]);
-            var links = _make_tx_links(input.prev_tx_hash);
-            sections.push({hex:tmp_hex.substr(0, length), color:"#"+color, label:"Input #"+i, human_readable:input.prev_tx_hash + ":" + input.prev_tx_n, links:links});
-            tmp_hex = tmp_hex.substring(length);
+            tmp_hex = _colored_txin(tmp_hex, sections, i);
         }
         
         sections.push({hex:tmp_hex.substr(0, 2), color:"#FFFFFF", label:"Number of outputs", human_readable:Std.string(outputs.length)});
@@ -326,6 +333,7 @@ class TxIn {
     public var prev_tx_n:Int;
     public var script:Script;
     public var size:Int;
+    public var sequence:Int;
 
     static public function splice_from_bytearray(raw:Array<Int>):TxIn {
         var PrevTxOut_hash = Encoding.bytearray_to_hexstring(raw.splice(0, 32), true); // 32 bytes
@@ -339,11 +347,12 @@ class TxIn {
         return new TxIn(PrevTxOut_hash, PrevTxOut_n, script, TxIn_n, size);
     }
     
-    public function new(TxOutHash:String,TxOutIndex:Int,script:Array<Int>,Sequence:Int, size) {
+    public function new(TxOutHash:String,TxOutIndex:Int,script:Array<Int>,sequence:Int, size) {
         prev_tx_hash = TxOutHash;
         prev_tx_n = TxOutIndex;
         this.script = new Script(script);
         this.size = size;
+        this.sequence = sequence;
     }
 }
 
