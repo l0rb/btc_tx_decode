@@ -15,10 +15,14 @@ import haxe.Int64; // UInt64 does not exist in most targets : (
 import StringTools;
 import haxe.crypto.Sha256;
 import haxe.io.Bytes;
+import haxe.Json.stringify;
 
 #if php
     import php.Lib;
     import php.Web;
+#else
+    import Sys;
+    import Sys.println;
 #end
 
 #if sys
@@ -33,11 +37,15 @@ class Decode {
         if(hex != null) {
             tx = new FancyTx(hex);
         }
+#if php
         // TODO: use the resource embedding system instead of sys.io
         var file_content = sys.io.File.getContent("../decode.tpl");
         var tpl = new haxe.Template(file_content);
         var output = tpl.execute({tx:tx});
         php.Lib.print(output);
+#else
+        println(tx.json());
+#end
     }
 
     static public function get_tx():String {
@@ -46,7 +54,12 @@ class Decode {
 #else
             // do some fancy input thing here?
             //var hash:String = "de77a762de896660005c3b43dc47c60ec30799985e910f0e6b69b78ae3c5790e";
-            var hex:String = "02000000024f0ae564c1f8a2425fb30b3b284a9af60c9a645ac3d4f6016481ec2a714ff0ff000000006a473044022100879bd08d49b63449b5f32b0e24e2e3dfd80f1369bbcfb83fba28538c7058e5b6021f0451f75d0f9d70a226a5159cdc557332e4f3a1381fcf28b01bd118ba34e96e012102854ce1ec65ea832859348b7d9fae1e7bf6bdf1168afc3d0e085c0e7fd06e62aafdffffff816d65ac23c4a393b57bb17c40b951e179325c33784296a107fa7a89f37c7a94000000006a473044022078274766268b7b3f98abfde8af84b12c2765ada9ff146fdcdc40d1e0eb82459d02207010e7cb5c734acd65616ad78ba032372606ce1588a01777065dcb3e6afa14c5012103d7d8cf8d1156fbfbc1e1cc04454827b4be67b999dfd8906250141d34a7616772fdffffff03b23b0f00000000001976a914a107ee7642791b75bfcf74c7cb255ea1e79e3d9b88acfcd31600000000001976a914d6507c014c0bcaf3380ce6d86562ea25e350344f88ac0e8d12000000000017a914ff94d93b444b0e8912e0e65e614a101a8b6ee1bd87ecf60700";
+            var hex:String;
+            if(Sys.args().length > 0) {
+                hex = Sys.args()[0];
+            } else {
+                hex = "02000000024f0ae564c1f8a2425fb30b3b284a9af60c9a645ac3d4f6016481ec2a714ff0ff000000006a473044022100879bd08d49b63449b5f32b0e24e2e3dfd80f1369bbcfb83fba28538c7058e5b6021f0451f75d0f9d70a226a5159cdc557332e4f3a1381fcf28b01bd118ba34e96e012102854ce1ec65ea832859348b7d9fae1e7bf6bdf1168afc3d0e085c0e7fd06e62aafdffffff816d65ac23c4a393b57bb17c40b951e179325c33784296a107fa7a89f37c7a94000000006a473044022078274766268b7b3f98abfde8af84b12c2765ada9ff146fdcdc40d1e0eb82459d02207010e7cb5c734acd65616ad78ba032372606ce1588a01777065dcb3e6afa14c5012103d7d8cf8d1156fbfbc1e1cc04454827b4be67b999dfd8906250141d34a7616772fdffffff03b23b0f00000000001976a914a107ee7642791b75bfcf74c7cb255ea1e79e3d9b88acfcd31600000000001976a914d6507c014c0bcaf3380ce6d86562ea25e350344f88ac0e8d12000000000017a914ff94d93b444b0e8912e0e65e614a101a8b6ee1bd87ecf60700";
+            }
 #end
         return hex;
     }
@@ -181,6 +194,13 @@ class Tx {
 
         if(raw_tx.length > 0)
             trace("Warning: Extra bytes at end of tx. " + raw_tx);
+    }
+
+    public function json():String {
+        return stringify({
+            hex: hex,
+            segwit: segwit
+        });
     }
 }
 
