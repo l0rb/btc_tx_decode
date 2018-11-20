@@ -148,6 +148,7 @@ class Tx {
     public var hash:String = "hash";
     public var hash_bytes:Array<Int>;
     public var hash_bytes_string:String;
+    public var coinbase:Bool = false;
 
     public function new(hexstring) {
         hex = hexstring;
@@ -164,7 +165,11 @@ class Tx {
             n_txIn = Encoding.splice_varint(raw_tx);
         }
         for(n in 0...n_txIn.low) {
-            inputs.push(TxIn.splice_from_bytearray(raw_tx));
+            var input = TxIn.splice_from_bytearray(raw_tx); 
+            if(input.prev_tx_hash == "0000000000000000000000000000000000000000000000000000000000000000") {
+                coinbase = true;
+            }
+            inputs.push(input);
         }
        
         outputs = new Array<TxOut>();
@@ -176,11 +181,7 @@ class Tx {
         if(segwit > 0) {
             var raw_before = raw_tx.length;
             for(input in inputs) {
-                var segwit_items = Encoding.splice_varint(raw_tx);
-                for(i in 0...segwit_items.low) {
-                    var item_size = Encoding.splice_varint(raw_tx);
-                    raw_tx.splice(0, item_size.low);
-                }
+                input.splice_witness_data(raw_tx);
             }
             witness_size = raw_before - raw_tx.length;
             hash_bytes.splice(4, 2); // first 8 bytes are version, next 2 bytes are segwit stuff
@@ -199,7 +200,12 @@ class Tx {
     public function json():String {
         return stringify({
             hex: hex,
-            segwit: segwit
+            segwit: segwit,
+            inputs: [for (input in inputs) {
+                prev_tx_hash: input.prev_tx_hash,
+                prev_tx_n: input.prev_tx_n,
+                witness_data: input.witness_data
+            }],
         });
     }
 }
@@ -334,6 +340,7 @@ class TxIn {
     public var script:Script;
     public var size:Int;
     public var sequence:Int;
+    public var witness_data:Array<String>;
 
     static public function splice_from_bytearray(raw:Array<Int>):TxIn {
         var PrevTxOut_hash = Encoding.bytearray_to_hexstring(raw.splice(0, 32), true); // 32 bytes
@@ -346,13 +353,23 @@ class TxIn {
         var TxIn_n = Encoding.splice_int32(raw); // 4 bytes
         return new TxIn(PrevTxOut_hash, PrevTxOut_n, script, TxIn_n, size);
     }
-    
+
+    public function splice_witness_data(raw:Array<Int>):TxIn {
+        var n_segwit_items = Encoding.splice_varint(raw);
+        for(i in 0...n_segwit_items.low) {
+            var item_size = Encoding.splice_varint(raw);
+            witness_data.push(Encoding.bytearray_to_hexstring(raw.splice(0, item_size.low)));
+        }
+        return this;
+    }
+
     public function new(TxOutHash:String,TxOutIndex:Int,script:Array<Int>,sequence:Int, size) {
         prev_tx_hash = TxOutHash;
         prev_tx_n = TxOutIndex;
         this.script = new Script(script);
         this.size = size;
         this.sequence = sequence;
+        witness_data = new Array<String>();
     }
 }
 
