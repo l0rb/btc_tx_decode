@@ -201,6 +201,7 @@ class Tx {
         return stringify({
             hex: hex,
             segwit: segwit,
+            coinbase: coinbase,
             inputs: [for (input in inputs) {
                 prev_tx_hash: input.prev_tx_hash,
                 prev_tx_n: input.prev_tx_n,
